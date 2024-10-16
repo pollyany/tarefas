@@ -5,8 +5,22 @@ import { getSession } from "next-auth/react";
 import { Textarea } from "@/components/textarea";
 import { FiShare2 } from "react-icons/fi";
 import { FaTrash } from "react-icons/fa";
+import { ChangeEvent, FormEvent, useState } from "react";
 
 export default function Dashboard() {
+  const [input, setInput] = useState("");
+  const [publicTask, setPublicTask] = useState(false);
+
+  function handleChangePublic(event: ChangeEvent<HTMLInputElement>) {
+    setPublicTask(event.target.checked);
+  }
+
+  function handleRegisterTask(e: FormEvent) {
+    e.preventDefault();
+
+    if (input === "") return;
+  }
+
   return (
     <div className={styles.container}>
       <Head>
@@ -18,10 +32,21 @@ export default function Dashboard() {
           <div className={styles.contentForm}>
             <h1 className={styles.title}>Qual sua tarefa?</h1>
 
-            <form>
-              <Textarea placeholder="Digite qual sua tarefa..." />
+            <form onSubmit={handleRegisterTask}>
+              <Textarea
+                placeholder="Digite qual sua tarefa..."
+                value={input}
+                onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
+                  setInput(event.target.value)
+                }
+              />
               <div className={styles.checkboxArea}>
-                <input type="checkbox" className={styles.checkbox} />
+                <input
+                  type="checkbox"
+                  checked={publicTask}
+                  onChange={handleChangePublic}
+                  className={styles.checkbox}
+                />
                 <label>Deixar tarefa publica?</label>
               </div>
 
@@ -51,7 +76,7 @@ export default function Dashboard() {
                 itaque aliquid, recusandae corrupti a blanditiis.
               </p>
               <button className={styles.trashButton}>
-                <FaTrash size={24} color="#ea3140"/>
+                <FaTrash size={24} color="#ea3140" />
               </button>
             </div>
           </article>
