@@ -53,3 +53,7 @@
     cursor: pointer;
   }
   
+  .button:disabled{
+    cursor: not-allowed;
+    background-color: rgb(49, 131, 255, 0.604);
+  }
