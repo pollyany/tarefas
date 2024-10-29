@@ -1,7 +1,6 @@
 import { GetServerSideProps } from "next";
 import Head from "next/head";
 import styles from "./styles.module.css";
-
 import { db } from "../../services/firebaseConnection";
 import {
   doc,
@@ -10,6 +9,7 @@ import {
   where,
   getDoc,
   addDoc,
+  getDocs,
 } from "firebase/firestore";
 
 import { Textarea } from "../../components/textarea";
@@ -24,14 +24,25 @@ interface TaskProps {
     user: string;
     taskId: string;
   };
+  allComments: CommentProps[];
 }
 
-export default function Task({ item }: TaskProps) {
-  const { data: session } = useSession();
-  const [input, setInput] = useState("");
+interface CommentProps {
+  id: string;
+  comment: string;
+  taskId: string;
+  user: string;
+  name: string;
+}
 
-  async function handleComment(e: FormEvent) {
-    e.preventDefault();
+export default function Task({ item, allComments }: TaskProps) {
+  const { data: session } = useSession();
+
+  const [input, setInput] = useState("");
+  const [comments, setComments] = useState<CommentProps[]>(allComments || []);
+
+  async function handleComment(event: FormEvent) {
+    event.preventDefault();
 
     if (input === "") return;
 
@@ -43,10 +54,10 @@ export default function Task({ item }: TaskProps) {
         created: new Date(),
         user: session?.user?.email,
         name: session?.user?.name,
-        taskId: item?.taskId
+        taskId: item?.taskId,
       });
 
-      setInput("")
+      setInput("");
     } catch (err) {
       console.log(err);
     }
@@ -71,8 +82,8 @@ export default function Task({ item }: TaskProps) {
         <form onSubmit={handleComment}>
           <Textarea
             value={input}
-            onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
-              setInput(e.target.value)
+            onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
+              setInput(event.target.value)
             }
             placeholder="Digite seu comentário..."
           />
@@ -81,14 +92,40 @@ export default function Task({ item }: TaskProps) {
           </button>
         </form>
       </section>
+
+      <section className={styles.commentsContainer}>
+        <h2>Todos comentários</h2>
+        {comments.length === 0 && (
+          <span>Nenhum comentário foi encontrado...</span>
+        )}
+
+        {comments.map((item) => (
+          <article key={item.id} className={styles.comment}>
+            <p>{item.comment}</p>
+          </article>
+        ))}
+      </section>
     </div>
   );
 }
 
 export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   const id = params?.id as string;
-
   const docRef = doc(db, "tarefas", id);
+
+  const q = query(collection(db, "comments"), where("taskId", "==", id));
+  const snapshotComments = await getDocs(q);
+
+  let allComments: CommentProps[] = [];
+  snapshotComments.forEach((doc) => {
+    allComments.push({
+      id: doc.id,
+      comment: doc.data().comment,
+      user: doc.data().user,
+      name: doc.data().name,
+      taskId: doc.data().taskId,
+    });
+  });
 
   const snapshot = await getDoc(docRef);
 
@@ -123,6 +160,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   return {
     props: {
       item: task,
+      allComments: allComments,
     },
   };
 };
